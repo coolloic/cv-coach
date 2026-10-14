@@ -29,7 +29,7 @@ export type SignInFormProps = {
 const FIELD_ORDER: SignInFormField[] = ["email", "password"];
 
 /**
- * Admin sign-in: email and password. Presentational, like RegistrationForm: results come in as props.
+ * Admin sign-in: email and password. Presentational: results come in as props.
  * After a failed attempt (an alert), focus goes to the password so it can be typed again.
  */
 export function SignInForm({ onSubmit, action, fieldErrors = {}, alert, submitting = false, defaultEmail = "" }: SignInFormProps) {

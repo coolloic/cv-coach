@@ -8,6 +8,8 @@ import { TAILORED_BLOCK, tailoredBlockSchema } from "./tailored-block";
 
 /** Who the chatbot is: its instructions (sent to the model) and what the page shows. Any persona works with any model. */
 export type Persona = {
+  /** Prompt version identifier for tracking and evaluation tuning. */
+  version: string;
   /** The assistant's name, on its messages. */
   name: string;
   /** The page's h1 and <title>. */
@@ -26,6 +28,7 @@ export type Persona = {
 };
 
 const brighte: Persona = {
+  version: "brighte-v1.0",
   name: "Brighte Eats assistant",
   title: "Chat with Brighte Eats",
   description: "Ask the Brighte Eats assistant about delivery, pick-up and payment, and how to register your interest before launch.",
@@ -43,6 +46,7 @@ Write in Australian English. Keep answers short and friendly: a few sentences. R
 };
 
 const general: Persona = {
+  version: "general-v1.0",
   name: "Assistant",
   title: "Chat assistant",
   description: "Ask the assistant anything.",
@@ -117,6 +121,7 @@ const COVER_LETTER_EXAMPLE = {
 };
 
 const career: Persona = {
+  version: "career-v1.1",
   name: "CV coach",
   title: "CV coach",
   description: "Check how well your CV matches a job, tailor it, and write a cover letter.",

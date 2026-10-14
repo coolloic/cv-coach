@@ -14,7 +14,8 @@
     "build-storybook": "storybook build",
     "test:e2e": "playwright test",
     "lighthouse": "lhci collect && lhci assert && lhci upload",
-    "eval": "dotenv -e ../../.env -- vitest run --config vitest.eval.config.mts"
+    "eval": "dotenv -e ../../.env -- vitest run --config vitest.eval.config.mts",
+    "eval:compare": "node evals/compare.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

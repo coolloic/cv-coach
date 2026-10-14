@@ -2,10 +2,11 @@
 
 export type ChatErrorCode = "BAD_REQUEST" | "FILES_TOO_LARGE" | "MODEL_UNAVAILABLE" | "RATE_LIMITED" | "PROVIDER_ERROR" | "NETWORK_ERROR" | "INTERRUPTED";
 
-export type ChatErrorBody = { code: ChatErrorCode; retryAfterSeconds?: number };
+export type ChatErrorBody = { code: ChatErrorCode; retryAfterSeconds?: number; requestId?: string };
 
 /** User-facing copy for a failed message. Never shows provider error details. */
-export function chatErrorMessage({ code, retryAfterSeconds }: ChatErrorBody): string {
+export function chatErrorMessage({ code, retryAfterSeconds, requestId }: ChatErrorBody): string {
+  const ref = requestId ? ` (Ref: ${requestId.slice(0, 8)})` : "";
   switch (code) {
     case "RATE_LIMITED": {
       const minutes = Math.max(1, Math.ceil((retryAfterSeconds ?? 60) / 60));
@@ -21,6 +22,6 @@ export function chatErrorMessage({ code, retryAfterSeconds }: ChatErrorBody): st
       return "We couldn't reach the assistant. Check your connection and try again.";
     case "BAD_REQUEST":
     case "PROVIDER_ERROR":
-      return "The assistant couldn't answer just now. Please try again in a moment.";
+      return `The assistant couldn't answer just now. Please try again in a moment.${ref}`;
   }
 }

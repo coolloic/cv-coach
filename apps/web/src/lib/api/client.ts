@@ -26,7 +26,9 @@ export async function graphql<T>(query: string, variables: Record<string, unknow
   const apiUrl = process.env.API_URL ?? `http://localhost:${process.env.API_PORT ?? 4001}/graphql`;
   // Proxies in front of this Next server whose X-Forwarded-For entries can be trusted (see client-ip.ts).
   const trustedHops = Number(process.env.WEB_TRUST_PROXY ?? 0);
-  const visitorIp = clientIp((requestHeaders ?? (await headers())).get("x-forwarded-for"), trustedHops);
+  const reqHeaders = requestHeaders ?? (await headers());
+  const visitorIp = clientIp(reqHeaders.get("x-forwarded-for"), trustedHops);
+  const requestId = reqHeaders.get("x-request-id");
 
   let response: Response;
   try {
@@ -36,6 +38,7 @@ export async function graphql<T>(query: string, variables: Record<string, unknow
         "content-type": "application/json",
         ...(token && { authorization: `Bearer ${token}` }),
         ...(visitorIp && { "x-forwarded-for": visitorIp }),
+        ...(requestId && { "x-request-id": requestId }),
       },
       body: JSON.stringify({ query, variables }),
       cache: "no-store",

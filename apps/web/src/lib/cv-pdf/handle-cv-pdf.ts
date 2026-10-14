@@ -6,7 +6,7 @@ import { coverLetterFilename, cvFilename } from "./filenames";
 import { renderCoverLetterPdf, renderCvPdf } from "./render";
 
 export type CvPdfHandlerDeps = {
-  takeRateLimit: (key: string) => RateLimitResult;
+  takeRateLimit: (key: string) => RateLimitResult | Promise<RateLimitResult>;
   /** Proxies whose X-Forwarded-For entries are trusted (WEB_TRUST_PROXY). */
   trustedHops: number;
   render?: (cv: Profile) => Promise<Buffer>;
@@ -58,7 +58,7 @@ export async function handleCvPdf(request: Request, deps: CvPdfHandlerDeps): Pro
   }
 
   const visitor = clientIp(request.headers.get("x-forwarded-for"), deps.trustedHops) ?? "unknown";
-  const limit = deps.takeRateLimit(visitor);
+  const limit = await deps.takeRateLimit(visitor);
   if (!limit.ok) {
     return error(429, { code: "RATE_LIMITED", retryAfterSeconds: limit.retryAfterSeconds }, { "retry-after": String(limit.retryAfterSeconds) });
   }
