@@ -6,11 +6,4 @@ export { getUser, logIn, renewToken, type Role, type SessionUser } from "./auth"
 export { graphql, type GraphqlOptions } from "./client";
 export { getLead, getLeads, type LeadsQuery } from "./leads";
 export { getMyData, saveMyData, searchMyData, type MyDataKind, type MyDataMatch, type MyDataSummary, type SavedMyData, type SaveMyDataInput } from "./my-data";
-export {
-  getServiceOptions,
-  registerInterest,
-  serviceOptionsTtlMs,
-  type RegistrationInput,
-  type RegistrationResult,
-  type ServiceOption,
-} from "./registration";
+export { getServiceOptions, serviceOptionsTtlMs, type ServiceOption } from "./leads";

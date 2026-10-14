@@ -17,7 +17,7 @@ registerEnumType(LeadSort, {
   description: 'Order of `leads`. Ties are broken by id, so pages are stable.',
 });
 
-@ObjectType({ description: 'One page of leads (limit/offset pagination).' })
+@ObjectType({ description: 'One page of leads (limit/offset and keyset/cursor pagination).' })
 export class LeadPage {
   @Field(() => [Lead])
   items: Lead[];
@@ -30,4 +30,7 @@ export class LeadPage {
 
   @Field(() => Int)
   offset: number;
+
+  @Field(() => String, { nullable: true, description: 'Cursor to pass as `after` for keyset pagination to fetch the next page.' })
+  nextCursor?: string;
 }

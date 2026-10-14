@@ -48,7 +48,7 @@ const ORDER: Record<LeadSort, Order> = {
   ],
 };
 
-export type ListLeadsArgs = { limit: number; offset: number; serviceType?: string; search?: string; sort: LeadSort };
+export type ListLeadsArgs = { limit: number; offset: number; serviceType?: string; search?: string; sort: LeadSort; after?: string | null };
 
 /** `text` for a LIKE pattern, matched literally: `%`, `_` and `\` lose their special meaning. */
 const likeLiteral = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
@@ -115,7 +115,7 @@ export class LeadsService {
     }
   }
 
-  async list({ limit, offset, serviceType, search, sort }: ListLeadsArgs): Promise<LeadPage> {
+  async list({ limit, offset, serviceType, search, sort, after }: ListLeadsArgs): Promise<LeadPage> {
     let include: Includeable[] = [];
     if (serviceType) {
       // Retired types still filter, so old leads stay findable.
@@ -124,15 +124,44 @@ export class LeadsService {
       include = [{ model: LeadServiceType, attributes: [], where: { serviceTypeId: type.id } }];
     }
 
+    const whereClauses: WhereOptions[] = [];
+    if (search) whereClauses.push(searchWhere(search));
+
+    if (after) {
+      const cursorLead = await this.leadModel.findByPk(after);
+      if (cursorLead) {
+        if (sort === LeadSort.NEWEST_FIRST) {
+          whereClauses.push({
+            [Op.or]: [
+              { createdAt: { [Op.lt]: cursorLead.createdAt } },
+              { [Op.and]: [{ createdAt: cursorLead.createdAt }, { id: { [Op.lt]: cursorLead.id } }] },
+            ],
+          });
+        } else if (sort === LeadSort.OLDEST_FIRST) {
+          whereClauses.push({
+            [Op.or]: [
+              { createdAt: { [Op.gt]: cursorLead.createdAt } },
+              { [Op.and]: [{ createdAt: cursorLead.createdAt }, { id: { [Op.gt]: cursorLead.id } }] },
+            ],
+          });
+        }
+      }
+    }
+
+    const combinedWhere = whereClauses.length > 0 ? { [Op.and]: whereClauses } : undefined;
+
     const { rows, count } = await this.leadModel.findAndCountAll({
-      where: search ? searchWhere(search) : undefined,
+      where: combinedWhere,
       include,
       order: ORDER[sort],
       limit,
-      offset,
+      offset: after ? 0 : offset,
       distinct: true,
     });
-    return { items: rows, total: count, limit, offset };
+
+    const nextCursor = rows.length === limit ? rows[rows.length - 1].id : undefined;
+
+    return { items: rows, total: count, limit, offset: after ? 0 : offset, nextCursor };
   }
 
   findById(id: string): Promise<Lead | null> {

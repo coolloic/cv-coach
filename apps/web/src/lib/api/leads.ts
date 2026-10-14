@@ -59,6 +59,24 @@ export async function getLeads(token: string, { page, pageSize, service, search,
 }
 
 /** One lead, or null if there is none with this id (a malformed id counts as none). */
+export type ServiceOption = { code: string; label: string };
+
+export const serviceOptionsTtlMs = 5 * 60 * 1000;
+
+const SERVICE_TYPES = /* GraphQL */ `
+  query ServiceTypes {
+    serviceTypes {
+      code
+      label
+    }
+  }
+`;
+
+export async function getServiceOptions(): Promise<ServiceOption[]> {
+  const { serviceTypes } = await graphql<{ serviceTypes: ServiceOption[] }>(SERVICE_TYPES);
+  return serviceTypes;
+}
+
 export async function getLead(token: string, id: string): Promise<Lead | null> {
   try {
     const { lead } = await graphql<{ lead: Lead | null }>(LEAD, { id }, { token });

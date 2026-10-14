@@ -18,6 +18,13 @@ export const NOT_ADMIN: SignInAlert = {
 };
 
 /** The browser couldn't reach this server (offline, or the request failed). */
+/** "53 seconds", "1 minute", "3 minutes". */
+export function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds} ${seconds === 1 ? "second" : "seconds"}`;
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+}
+
 export const SIGN_IN_CONNECTION_PROBLEM: SignInAlert = {
   tone: "error",
   title: "We couldn't sign you in",

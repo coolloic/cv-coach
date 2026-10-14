@@ -51,8 +51,10 @@ export class LeadsResolver {
     })
     search: string | null | undefined,
     @Args('sort', { type: () => LeadSort, defaultValue: LeadSort.NEWEST_FIRST }) sort: LeadSort,
+    @Args('after', { type: () => String, nullable: true, description: 'Cursor ID for keyset pagination. Overrides offset pagination when set.' })
+    after: string | null | undefined,
   ): Promise<LeadPage> {
-    return this.leadsService.list({ ...validate(leadsArgsSchema, { limit, offset, serviceType, search }), sort });
+    return this.leadsService.list({ ...validate(leadsArgsSchema, { limit, offset, serviceType, search }), sort, after });
   }
 
   @Roles(Role.ADMIN)

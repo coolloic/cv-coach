@@ -17,14 +17,17 @@ import { siteUrl } from "@/lib/site";
  */
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const https = siteUrl().protocol === "https:";
   const policy = contentSecurityPolicy({ nonce, development: process.env.NODE_ENV === "development", https });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("x-request-id", requestId);
   requestHeaders.set("Content-Security-Policy", policy);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("Content-Security-Policy", policy);
+  response.headers.set("x-request-id", requestId);
   if (https) response.headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
 
   if (request.nextUrl.pathname.startsWith("/admin")) await renewSession(request, response);

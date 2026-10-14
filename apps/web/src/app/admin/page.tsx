@@ -50,7 +50,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/admin">) {
   if (params.page > pageCount) redirect(dashboardHref({ ...params, page: pageCount }));
 
   const { q, service, sort, size } = params;
-  const serviceLabel = service && (serviceOptions.find((option) => option.code === service)?.label ?? service);
+  const serviceLabel = service && (serviceOptions.find((option: { code: string; label: string }) => option.code === service)?.label ?? service);
   const emptyLink = "font-semibold text-fg-brand underline focus-visible:focus-ring";
   // What the list shows when it's empty: a search that matched nothing, a service nobody chose yet, or no leads at all.
   const empty = q

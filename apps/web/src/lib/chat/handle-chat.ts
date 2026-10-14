@@ -8,7 +8,7 @@ import type { RateLimitResult } from "./rate-limit";
 export type ChatHandlerDeps = {
   catalog: Pick<ModelCatalog, "find">;
   getClient: (provider: ProviderId) => LlmClient | undefined;
-  takeRateLimit: (key: string) => RateLimitResult;
+  takeRateLimit: (key: string) => RateLimitResult | Promise<RateLimitResult>;
   system: string;
   limits: ChatRequestLimits;
   maxOutputTokens: number;
@@ -29,26 +29,30 @@ function errorResponse(status: number, body: ChatErrorBody, headers: Record<stri
  * into words by the page (chatErrorMessage).
  */
 export async function handleChat(request: Request, deps: ChatHandlerDeps): Promise<Response> {
+  const startTime = performance.now();
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+
   // JSON only: a cross-site page can't send that without a CORS preflight, which this route never allows.
-  if (!request.headers.get("content-type")?.startsWith("application/json")) return errorResponse(415, { code: "BAD_REQUEST" });
+  if (!request.headers.get("content-type")?.startsWith("application/json")) return errorResponse(415, { code: "BAD_REQUEST", requestId });
 
   // The files as base64 (4/3 of their size) plus room for the conversation's text.
   const read = await readJson(request, Math.ceil((deps.limits.maxRequestBytes * 4) / 3) + 1024 * 1024);
-  if (read === "too-large") return errorResponse(413, { code: "FILES_TOO_LARGE" });
-  if (read === "invalid") return errorResponse(400, { code: "BAD_REQUEST" });
+  if (read === "too-large") return errorResponse(413, { code: "FILES_TOO_LARGE", requestId });
+  if (read === "invalid") return errorResponse(400, { code: "BAD_REQUEST", requestId });
   const parsed = chatRequestSchema(deps.limits).safeParse(read.json);
-  if (!parsed.success) return errorResponse(400, { code: "BAD_REQUEST" });
+  if (!parsed.success) return errorResponse(400, { code: "BAD_REQUEST", requestId });
   const { provider, model, messages } = parsed.data;
 
   const client = (await deps.catalog.find(provider, model)) && deps.getClient(provider);
-  if (!client) return errorResponse(400, { code: "MODEL_UNAVAILABLE" });
+  if (!client) return errorResponse(400, { code: "MODEL_UNAVAILABLE", requestId });
 
   // Counted only for requests that reach the model: those cost money. Without a trusted proxy (local
   // development) there is no visitor IP, and everyone shares one count.
   const visitor = clientIp(request.headers.get("x-forwarded-for"), deps.trustedHops) ?? "unknown";
-  const limit = deps.takeRateLimit(visitor);
+  const limit = await deps.takeRateLimit(visitor);
   if (!limit.ok) {
-    return errorResponse(429, { code: "RATE_LIMITED", retryAfterSeconds: limit.retryAfterSeconds }, { "retry-after": String(limit.retryAfterSeconds) });
+    console.warn(JSON.stringify({ event: "rate_limit.blocked", requestId, visitor, provider, model }));
+    return errorResponse(429, { code: "RATE_LIMITED", retryAfterSeconds: limit.retryAfterSeconds, requestId }, { "retry-after": String(limit.retryAfterSeconds) });
   }
 
   const recalled = await deps.recall?.(messages, request);
@@ -63,9 +67,12 @@ export async function handleChat(request: Request, deps: ChatHandlerDeps): Promi
   try {
     first = await chunks.next();
   } catch (error) {
-    console.error(`Chat with ${provider}:${model} failed:`, error);
-    return errorResponse(502, { code: "PROVIDER_ERROR" });
+    console.error(JSON.stringify({ event: "chat.provider_error", requestId, provider, model, error: String(error) }));
+    return errorResponse(502, { code: "PROVIDER_ERROR", requestId });
   }
+
+  const timeToFirstTokenMs = Math.round(performance.now() - startTime);
+  console.info(JSON.stringify({ event: "chat.first_token", requestId, provider, model, timeToFirstTokenMs }));
 
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({

@@ -10,7 +10,7 @@ export type FormPageTemplateProps = {
   intro: string;
   /** Reasons to register, shown as a ticked list beside the form from lg up. */
   highlights?: string[];
-  /** The form, e.g. <RegistrationForm />. */
+  /** The form component. */
   children: ReactNode;
   /** Right side of the header, e.g. a link to another page (AppShell). */
   headerActions?: ReactNode;

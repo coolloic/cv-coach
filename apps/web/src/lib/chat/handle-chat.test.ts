@@ -75,7 +75,7 @@ describe("handleChat", () => {
     const client = fakeClient(() => reply("never"));
     const response = await handleChat(request, deps(client));
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ code: "BAD_REQUEST" });
+    expect(await response.json()).toEqual(expect.objectContaining({ code: "BAD_REQUEST" }));
     expect(client.streamChat).not.toHaveBeenCalled();
   });
 
@@ -88,7 +88,7 @@ describe("handleChat", () => {
     const client = fakeClient(() => reply("never"));
     const response = await handleChat(post({ ...valid, model: "claude-opus-5" }), deps(client));
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ code: "MODEL_UNAVAILABLE" });
+    expect(await response.json()).toEqual(expect.objectContaining({ code: "MODEL_UNAVAILABLE" }));
     expect(client.streamChat).not.toHaveBeenCalled();
   });
 
@@ -100,7 +100,7 @@ describe("handleChat", () => {
     expect(takeRateLimit).toHaveBeenCalledWith("203.0.113.7");
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("42");
-    expect(await response.json()).toEqual({ code: "RATE_LIMITED", retryAfterSeconds: 42 });
+    expect(await response.json()).toEqual(expect.objectContaining({ code: "RATE_LIMITED", retryAfterSeconds: 42 }));
     expect(client.streamChat).not.toHaveBeenCalled();
   });
 
@@ -130,7 +130,7 @@ describe("handleChat", () => {
     const huge = "x".repeat(2 * 1024 * 1024);
     const response = await handleChat(post({ ...valid, messages: [{ role: "user", content: huge }] }), deps(client));
     expect(response.status).toBe(413);
-    expect(await response.json()).toEqual({ code: "FILES_TOO_LARGE" });
+    expect(await response.json()).toEqual(expect.objectContaining({ code: "FILES_TOO_LARGE" }));
   });
 
   it("answers 502 when the provider fails before replying", async () => {
@@ -140,6 +140,6 @@ describe("handleChat", () => {
     });
     const response = await handleChat(post(valid), deps(client));
     expect(response.status).toBe(502);
-    expect(await response.json()).toEqual({ code: "PROVIDER_ERROR" });
+    expect(await response.json()).toEqual(expect.objectContaining({ code: "PROVIDER_ERROR" }));
   });
 });

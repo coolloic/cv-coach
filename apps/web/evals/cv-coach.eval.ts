@@ -35,6 +35,7 @@ const persona = configuredPersona({ ...config, persona: "career" });
 const RUNS = Number(env.EVAL_RUNS ?? 3);
 const CONCURRENCY = Number(env.EVAL_CONCURRENCY ?? 4);
 const TASKS = new Set((env.EVAL_TASKS ?? "profile,match,tailor,letter,judge,recall,pdf").split(",").map((task) => task.trim()));
+const PERSONA_VERSION = env.EVAL_PERSONA_VERSION ?? persona.version;
 const cases = env.EVAL_CASES ? CASES.filter((testCase) => env.EVAL_CASES!.split(",").includes(testCase.id)) : CASES;
 
 type Model = { client: LlmClient; id: string; key: string };
@@ -245,7 +246,7 @@ it("CV coach eval", async () => {
   console.log(report.text);
   const file = path.join(import.meta.dirname, "results", `${new Date().toISOString().replace(/[:.]/g, "-")}-${model.id}.json`);
   await mkdir(path.dirname(file), { recursive: true });
-  await writeFile(file, JSON.stringify({ model: model.key, judge: judge?.key, runs: RUNS, summary: report.summary, calibration, recall, results: runs }, null, 2));
+  await writeFile(file, JSON.stringify({ model: model.key, personaVersion: PERSONA_VERSION, judge: judge?.key, runs: RUNS, summary: report.summary, calibration, recall, results: runs }, null, 2));
   console.log(`\nFull results: ${path.relative(process.cwd(), file)}`);
 });
 
